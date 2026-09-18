@@ -1,0 +1,21 @@
+Third-party notices
+===================
+
+Scalable CLI
+------------
+This project uses the official "sc" command-line tool
+(https://github.com/ScalableCapital/scalable-cli), which is downloaded at
+add-on build time from its official GitHub releases.
+
+The add-on and integration icons/logo in this repository are derived from the
+assets shipped with the Scalable CLI project, which is licensed under the
+Apache License, Version 2.0:
+https://github.com/ScalableCapital/scalable-cli/blob/main/LICENSE
+
+
+Trademarks / affiliation
+------------------------
+"Scalable" and the Scalable logo are trademarks of Scalable Capital GmbH.
+
+This project is an unofficial, community-made integration. It is not
+affiliated with, endorsed by, or supported by Scalable Capital GmbH.

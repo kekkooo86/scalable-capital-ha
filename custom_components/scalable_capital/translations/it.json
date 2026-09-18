@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connetti al bridge Scalable",
+        "description": "Cerca l'add-on Scalable CLI Bridge sulla rete interna e connettiti. Assicurati che l'add-on sia installato e avviato e di aver effettuato l'accesso dal suo pannello. Lascia vuoto l'URL per il rilevamento automatico (atteso: {default_url}); compilalo solo se il rilevamento fallisce.",
+        "data": {
+          "url": "URL del bridge (vuoto = rilevamento automatico)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile raggiungere l'add-on. Assicurati che l'add-on Scalable CLI Bridge sia installato e avviato."
+    },
+    "abort": {
+      "already_configured": "Il bridge Scalable è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Scalable Capital",
+        "description": "Avanzate: sovrascrivi l'URL del bridge (lascia invariato per l'add-on standard) e imposta l'intervallo di aggiornamento (minimo {min_interval} s). Se impostata, l'opzione 'scan_interval' dell'add-on ha la precedenza.",
+        "data": {
+          "url": "URL del bridge (avanzato)",
+          "scan_interval": "Intervallo di aggiornamento (secondi)"
+        }
+      }
+    }
+  }
+}

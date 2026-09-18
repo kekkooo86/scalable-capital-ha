@@ -1,0 +1,192 @@
+# Home Assistant package — Scalable Capital smooth P/L helpers
+#
+# The integration exposes the broker's plus/minus sensors directly. Those are
+# fine as values, but on a chart they show a "cliff" at every period boundary
+# (the broker keeps the previous period's value overnight and only re-values at
+# market open). This package computes a *smooth* P/L for the current period:
+#
+#   P/L(period) = portfolio value - baseline(period)
+#
+# where the baseline is the portfolio value at the start of the period
+# (today / Monday / 1st of month / 1st of January). Overnight the P/L stays at
+# 0 and grows from the live re-valuation onwards, with no step.
+#
+# Copy this file to /config/packages/ and make sure packages are enabled in
+# configuration.yaml:
+#
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Then restart Home Assistant. Requires the `scalable_capital` integration.
+
+input_select:
+  scalable_range:
+    name: Scalable Range
+    options:
+      - "1G"
+      - "1S"
+      - "1M"
+      - "YTD"
+      - "1A"
+    initial: "1G"
+    icon: mdi:chart-timeline-variant
+
+input_number:
+  scalable_baseline:
+    name: Scalable baseline
+    min: 0
+    max: 1000000
+    step: 0.01
+    initial: 0
+    unit_of_measurement: "€"
+    icon: mdi:flag-outline
+  scalable_baseline_settimana:
+    name: Scalable baseline settimana
+    min: 0
+    max: 1000000
+    step: 0.01
+    initial: 0
+    unit_of_measurement: "€"
+    icon: mdi:flag-outline
+  scalable_baseline_mese:
+    name: Scalable baseline mese
+    min: 0
+    max: 1000000
+    step: 0.01
+    initial: 0
+    unit_of_measurement: "€"
+    icon: mdi:flag-outline
+  scalable_baseline_anno:
+    name: Scalable baseline anno
+    min: 0
+    max: 1000000
+    step: 0.01
+    initial: 0
+    unit_of_measurement: "€"
+    icon: mdi:flag-outline
+
+template:
+  - sensor:
+      - name: "Scalable capital P/L intraday"
+        unique_id: scalable_capital_pl_intraday
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:chart-line
+        state: >-
+          {{ ((states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+              (states('input_number.scalable_baseline') | float(0))) | round(2) }}
+      - name: "Scalable capital P/L settimana"
+        unique_id: scalable_capital_pl_settimana
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:chart-line
+        state: >-
+          {{ ((states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+              (states('input_number.scalable_baseline_settimana') | float(0))) | round(2) }}
+      - name: "Scalable capital P/L mese"
+        unique_id: scalable_capital_pl_mese
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:chart-line
+        state: >-
+          {{ ((states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+              (states('input_number.scalable_baseline_mese') | float(0))) | round(2) }}
+      - name: "Scalable capital P/L anno"
+        unique_id: scalable_capital_pl_anno
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:chart-line
+        state: >-
+          {{ ((states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+              (states('input_number.scalable_baseline_anno') | float(0))) | round(2) }}
+
+automation:
+  - id: scalable_baselines
+    alias: "Scalable: baseline periodi"
+    mode: single
+    triggers:
+      - trigger: time
+        at: "00:00:30"
+      - trigger: time
+        at: "10:15:00"
+      - trigger: homeassistant
+        event: start
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ states('sensor.scalable_capital_portafoglio_scalable') | float(0) > 0 }}
+    actions:
+      - choose:
+          # Before market open: the broker still holds the previous close, so
+          # the portfolio value IS the correct baseline for the new period.
+          - conditions:
+              - condition: template
+                value_template: "{{ now().hour < 10 }}"
+            sequence:
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.scalable_baseline
+                data:
+                  value: "{{ states('sensor.scalable_capital_portafoglio_scalable') | float(0) }}"
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ now().weekday() == 0 }}"
+                    sequence:
+                      - action: input_number.set_value
+                        target:
+                          entity_id: input_number.scalable_baseline_settimana
+                        data:
+                          value: "{{ states('sensor.scalable_capital_portafoglio_scalable') | float(0) }}"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ now().day == 1 }}"
+                    sequence:
+                      - action: input_number.set_value
+                        target:
+                          entity_id: input_number.scalable_baseline_mese
+                        data:
+                          value: "{{ states('sensor.scalable_capital_portafoglio_scalable') | float(0) }}"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ now().month == 1 and now().day == 1 }}"
+                    sequence:
+                      - action: input_number.set_value
+                        target:
+                          entity_id: input_number.scalable_baseline_anno
+                        data:
+                          value: "{{ states('sensor.scalable_capital_portafoglio_scalable') | float(0) }}"
+          # After market open: self-heal. baseline = value - broker P/L, which
+          # is invariant and stays correct even after restarts or missed runs.
+          - conditions:
+              - condition: template
+                value_template: "{{ now().hour >= 10 }}"
+            sequence:
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.scalable_baseline
+                data:
+                  value: >-
+                    {{ (states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+                       (states('sensor.scalable_capital_plus_minusvalenza_oggi') | float(0)) }}
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.scalable_baseline_settimana
+                data:
+                  value: >-
+                    {{ (states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+                       (states('sensor.scalable_capital_plus_minusvalenza_settimana') | float(0)) }}
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.scalable_baseline_mese
+                data:
+                  value: >-
+                    {{ (states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+                       (states('sensor.scalable_capital_plus_minusvalenza_mese') | float(0)) }}
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.scalable_baseline_anno
+                data:
+                  value: >-
+                    {{ (states('sensor.scalable_capital_portafoglio_scalable') | float(0)) -
+                       (states('sensor.scalable_capital_plus_minusvalenza_anno') | float(0)) }}

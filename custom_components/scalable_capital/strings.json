@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the Scalable bridge",
+        "description": "Search for the Scalable CLI Bridge add-on on the internal network and connect. Make sure the add-on is installed and started, and that you have logged in from its panel. Leave the URL empty to auto-detect (expected: {default_url}); fill it in only if auto-detection fails.",
+        "data": {
+          "url": "Bridge URL (leave empty for auto-detect)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the add-on. Make sure the Scalable CLI Bridge add-on is installed and started."
+    },
+    "abort": {
+      "already_configured": "The Scalable bridge is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Scalable Capital options",
+        "description": "Advanced: override the bridge URL (leave unchanged for the standard add-on) and set the polling interval (min {min_interval} s). The add-on option 'scan_interval' overrides this value when set.",
+        "data": {
+          "url": "Bridge URL (advanced)",
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  }
+}

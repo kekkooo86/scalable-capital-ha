@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scalable CLI Bridge</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           margin: 0; padding: 20px; max-width: 720px; }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    .muted { opacity: .7; font-size: .9rem; }
+    .card { border: 1px solid #8884; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px;
+            font-size: .8rem; font-weight: 600; }
+    .ok { background: #1f883d; color: #fff; }
+    .bad { background: #b42318; color: #fff; }
+    .warn { background: #b54708; color: #fff; }
+    button { font-size: 1rem; padding: 10px 16px; border-radius: 10px;
+             border: 0; background: #3b82f6; color: #fff; cursor: pointer; }
+    button.danger { background: #b42318; }
+    button[disabled] { opacity: .5; cursor: default; }
+    code { background: #8882; padding: 2px 6px; border-radius: 6px;
+           font-size: 1.05rem; }
+    .url { word-break: break-all; }
+    pre { background: #8882; padding: 10px; border-radius: 8px;
+          overflow: auto; font-size: .8rem; max-height: 180px; }
+    a { color: #3b82f6; }
+    table.data { width: 100%; border-collapse: collapse; }
+    table.data td { padding: 5px 0; vertical-align: top; }
+    table.data td:last-child { text-align: right; font-weight: 600;
+                               font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <h1>Scalable CLI Bridge</h1>
+  <div class="muted">Bridge read-only verso la CLI ufficiale Scalable (<code>sc</code>).</div>
+
+  <div class="card">
+    <div>Stato sessione: <span id="state" class="pill warn">…</span></div>
+    <div class="muted" id="detail" style="margin-top:8px"></div>
+    <div class="muted" id="interval" style="margin-top:8px"></div>
+    <div style="margin-top:12px">
+      <button id="logoutBtn" class="danger" style="display:none" onclick="logout()">Disconnetti account</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="margin-bottom:12px">Dati portafoglio</div>
+    <table class="data" id="portfolio"><tr><td class="muted">Caricamento…</td><td></td></tr></table>
+    <div class="muted" id="pferr" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card" id="loginCard" style="display:none">
+    <div style="margin-bottom:12px">Accesso (device-code)</div>
+    <button id="loginBtn" onclick="startLogin()">Accedi a Scalable</button>
+    <div id="loginBox" style="display:none; margin-top:16px">
+      <div>Apri questo URL e conferma il codice nell'app Scalable:</div>
+      <div class="url" style="margin:8px 0"><a id="loginUrl" href="#" target="_blank" rel="noopener"></a></div>
+      <div>Codice: <code id="loginCode">—</code></div>
+      <div class="muted" id="loginMsg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <button id="refreshBtn" style="display:none" onclick="refreshState()">Aggiorna stato</button>
+    <pre id="output"></pre>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function j(path, opts) {
+  const r = await fetch(path, opts);
+  return await r.json();
+}
+
+async function refreshState() {
+  let st = 'error';
+  try {
+    const s = await j('session');
+    st = s.session ? s.session.state : 'error';
+    const el = $('state');
+    el.textContent = st;
+    el.className = 'pill ' + (st === 'active' ? 'ok' : (st === 'expired' ? 'warn' : 'bad'));
+    $('detail').textContent = (s.session && s.session.detail) || '';
+  } catch (e) {
+    $('state').textContent = 'unreachable';
+    $('state').className = 'pill bad';
+  }
+  const loggedIn = st === 'active';
+  $('loginCard').style.display = loggedIn ? 'none' : 'block';
+  $('logoutBtn').style.display = loggedIn ? 'inline-block' : 'none';
+  $('refreshBtn').style.display = loggedIn ? 'inline-block' : 'none';
+  try {
+    const c = await j('config');
+    if (c && c.scan_interval) {
+      $('interval').textContent = 'Intervallo aggiornamento (opzione add-on): ' +
+        Math.round(c.scan_interval / 60) + ' min (' + c.scan_interval + ' s)';
+    }
+  } catch (e) { /* ignore */ }
+  refreshPortfolio();
+}
+
+const PERF_LABELS = [
+  ['INTRADAY', 'Plus/minusvalenza oggi'],
+  ['ONE_WEEK', 'Plus/minusvalenza settimana'],
+  ['ONE_MONTH', 'Plus/minusvalenza mese'],
+  ['ONE_YEAR', 'Plus/minusvalenza anno'],
+  ['MAX', 'Plus/minusvalenza totale'],
+];
+
+function fmtEur(v) {
+  if (v === null || v === undefined) return '—';
+  return new Intl.NumberFormat('it-IT', {style: 'currency', currency: 'EUR'}).format(v);
+}
+
+async function refreshPortfolio() {
+  const table = $('portfolio');
+  try {
+    const p = await j('portfolio');
+    if (!p.ok) throw new Error(p.error || 'errore');
+    const ov = p.overview || {};
+    const val = ov.valuation || {};
+    const perf = {};
+    (ov.performance || []).forEach(e => { perf[e.timeframe] = e.simpleAbsoluteReturn; });
+    const total = val.total, sec = val.securities;
+    const cash = (total !== null && total !== undefined && sec !== null && sec !== undefined)
+      ? Math.max(0, total - sec) : null;
+
+    const rows = [
+      ['Portafoglio', fmtEur(total)],
+      ['Titoli', fmtEur(sec)],
+      ['Cash', fmtEur(cash)],
+    ];
+    PERF_LABELS.forEach(([k, label]) => {
+      if (perf[k] !== null && perf[k] !== undefined) rows.push([label, fmtEur(perf[k])]);
+    });
+    const ts = (ov.timestamps || {}).valuation_timestamp_utc;
+    rows.push(['Ultimo aggiornamento', ts ? new Date(ts).toLocaleString('it-IT') : '—']);
+
+    table.innerHTML = rows.map(r =>
+      `<tr><td class="muted">${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+    $('pferr').textContent = '';
+  } catch (e) {
+    table.innerHTML = '<tr><td class="muted">—</td><td></td></tr>';
+    $('pferr').textContent = 'Dati non disponibili: ' + e.message +
+      (String(e.message).indexOf('session') >= 0 ? ' (effettua l\'accesso)' : '');
+  }
+}
+
+let poll = null;
+
+async function startLogin() {
+  $('loginBtn').disabled = true;
+  const res = await j('login/start', {method: 'POST'});
+  renderLogin(res.login);
+  if (poll) clearInterval(poll);
+  poll = setInterval(async () => {
+    const st = await j('login/status');
+    renderLogin(st.login);
+    if (!st.login.running) {
+      clearInterval(poll);
+      $('loginBtn').disabled = false;
+      refreshState();
+    }
+  }, 3000);
+}
+
+function renderLogin(l) {
+  if (!l) return;
+  $('loginBox').style.display = 'block';
+  if (l.url) { $('loginUrl').textContent = l.url; $('loginUrl').href = l.url; }
+  $('loginCode').textContent = l.code || '—';
+  if (l.running) {
+    $('loginMsg').textContent = 'In attesa della conferma nell\'app Scalable…';
+  } else if (l.returncode === 0) {
+    $('loginMsg').textContent = 'Accesso completato.';
+  } else if (l.error) {
+    $('loginMsg').textContent = 'Errore: ' + l.error;
+  }
+  if (l.output) $('output').textContent = l.output;
+}
+
+async function logout() {
+  if (!confirm('Disconnettere l\'account Scalable dall\'add-on? Dovrai rifare l\'accesso dal browser/app.')) return;
+  const btn = $('logoutBtn');
+  btn.disabled = true;
+  try {
+    await j('logout', {method: 'POST'});
+  } catch (e) { /* ignore */ }
+  $('loginMsg').textContent = '';
+  await refreshState();
+  btn.disabled = false;
+}
+
+refreshState();
+</script>
+</body>
+</html>

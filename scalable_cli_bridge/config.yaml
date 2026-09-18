@@ -1,0 +1,18 @@
+name: Scalable CLI Bridge
+version: "1.2.6"
+slug: scalable_cli_bridge
+description: Read-only HTTP bridge and device-code login for the official Scalable CLI (sc)
+url: https://github.com/kekkooo86/scalable-capital-ha
+arch:
+  - amd64
+  - aarch64
+init: false
+ingress: true
+ingress_port: 8788
+panel_icon: mdi:chart-timeline-variant
+panel_title: Scalable
+watchdog: "http://[HOST]:8788/health"
+options:
+  scan_interval: 900
+schema:
+  scan_interval: int(300,86400)

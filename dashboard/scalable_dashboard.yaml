@@ -1,0 +1,857 @@
+# Example Lovelace dashboard for the Scalable Capital integration.
+# Paste into a dashboard's raw configuration editor (needs apexcharts-card,
+# button-card, card-mod and layout-card from HACS).
+# Requires the helpers in scalable_pl_helpers.yaml.
+
+views:
+- title: Scalable
+  path: home
+  icon: mdi:chart-line
+  cards:
+  - type: custom:mod-card
+    card_mod:
+      style: :host { display:block; max-width:480px; margin:0 auto; background:#000; } ha-card { background:#000 !important; border:none !important; box-shadow:none !important; border-radius:0 !important; --vertical-stack-card-gap:0px; }
+    card:
+      type: vertical-stack
+      cards:
+      - type: custom:button-card
+        show_name: false
+        show_icon: false
+        show_state: false
+        tap_action:
+          action: none
+        custom_fields:
+          main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_portafoglio_scalable'].state) || 0;\n  const d = parseFloat(states['sensor.scalable_capital_pl_intraday'].state) || 0;\n  const whole = Math.trunc(v);\n  const dec = Math.abs(v - whole).toFixed(2).slice(2);\n  const nf0 = new Intl.NumberFormat('it-IT');\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = d >= 0 ? '#00e676' : '#ff5252';\n  const sign = d >= 0 ? '+' : '';\n  return '<div style=\"padding:14px 22px 8px 22px;\">'\n   + '<div style=\"line-height:1;color:#fff;\">'\n   + '<span style=\"font-size:58px;font-weight:600;letter-spacing:-2px;\">' + nf0.format(whole) + '</span>'\n   + '<sup style=\"font-size:24px;color:#9e9e9e;font-weight:500;\">' + dec + '</sup>'\n   + '<span style=\"font-size:34px;font-weight:300;color:#dcdcdc;margin-left:1px;\">\\u20ac</span>'\n   + '</div>'\n   + '<div style=\"margin-top:8px;font-size:20px;\">'\n   + '<span style=\"color:#dcdcdc;\">Oggi</span>'\n   + '<span style=\"color:' + col + ';font-weight:600;margin-left:10px;\">' + sign + nf2.format(d) + ' \\u20ac</span>'\n   + '</div>'\n   + '</div>';\n]]]"
+        styles:
+          card:
+          - background: '#000000'
+          - box-shadow: none
+          - border: none
+          - border-radius: '0'
+          - padding: '0'
+          - margin: '0'
+          grid:
+          - grid-template-areas: '''main'''
+          - grid-template-columns: 1fr
+          custom_fields:
+            main:
+            - grid-area: main
+            - padding: '0'
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: input_select.scalable_range
+          state: 1G
+        card:
+          type: custom:apexcharts-card
+          graph_span: 1d
+          update_interval: 60s
+          header:
+            show: false
+          now:
+            show: false
+          series:
+          - entity: sensor.scalable_capital_pl_intraday
+            name: Variazione
+            color: '#00e676'
+            type: area
+            curve: smooth
+            stroke_width: 3
+            opacity: 1
+            extend_to: false
+            group_by:
+              func: avg
+              duration: 5min
+            show:
+              legend_value: false
+          apex_config:
+            chart:
+              height: 300
+              background: '#000000'
+              toolbar:
+                show: false
+              zoom:
+                enabled: false
+              animations:
+                enabled: false
+              parentHeightOffset: 0
+            grid:
+              show: true
+              borderColor: '#1c1c1c'
+              strokeDashArray: 0
+              xaxis:
+                lines:
+                  show: false
+              yaxis:
+                lines:
+                  show: true
+              padding:
+                left: 4
+                right: 4
+            xaxis:
+              type: datetime
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 12px
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            yaxis:
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 13px
+                formatter: EVAL:function(v){return Math.round(v);}
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            legend:
+              show: false
+            tooltip:
+              theme: dark
+            markers:
+              size: 0
+            stroke:
+              curve: smooth
+              width: 3
+            fill:
+              type: gradient
+              gradient:
+                shadeIntensity: 0.4
+                opacityFrom: 0.35
+                opacityTo: 0.02
+                stops:
+                - 0
+                - 95
+          card_mod:
+            style: 'ha-card { background: #000 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }'
+          span:
+            start: day
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: input_select.scalable_range
+          state: 1S
+        card:
+          type: custom:apexcharts-card
+          graph_span: 7d
+          update_interval: 60s
+          header:
+            show: false
+          now:
+            show: false
+          series:
+          - entity: sensor.scalable_capital_pl_settimana
+            name: Variazione
+            color: '#00e676'
+            type: area
+            curve: smooth
+            stroke_width: 3
+            opacity: 1
+            extend_to: false
+            group_by:
+              func: avg
+              duration: 30min
+            show:
+              legend_value: false
+          apex_config:
+            chart:
+              height: 300
+              background: '#000000'
+              toolbar:
+                show: false
+              zoom:
+                enabled: false
+              animations:
+                enabled: false
+              parentHeightOffset: 0
+            grid:
+              show: true
+              borderColor: '#1c1c1c'
+              strokeDashArray: 0
+              xaxis:
+                lines:
+                  show: false
+              yaxis:
+                lines:
+                  show: true
+              padding:
+                left: 4
+                right: 4
+            xaxis:
+              type: datetime
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 12px
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            yaxis:
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 13px
+                formatter: EVAL:function(v){return Math.round(v);}
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            legend:
+              show: false
+            tooltip:
+              theme: dark
+            markers:
+              size: 0
+            stroke:
+              curve: smooth
+              width: 3
+            fill:
+              type: gradient
+              gradient:
+                shadeIntensity: 0.4
+                opacityFrom: 0.35
+                opacityTo: 0.02
+                stops:
+                - 0
+                - 95
+          card_mod:
+            style: 'ha-card { background: #000 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }'
+          span:
+            start: week
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: input_select.scalable_range
+          state: 1M
+        card:
+          type: custom:apexcharts-card
+          graph_span: 31d
+          update_interval: 60s
+          header:
+            show: false
+          now:
+            show: false
+          series:
+          - entity: sensor.scalable_capital_pl_mese
+            name: Variazione
+            color: '#00e676'
+            type: area
+            curve: smooth
+            stroke_width: 3
+            opacity: 1
+            extend_to: false
+            group_by:
+              func: avg
+              duration: 2h
+            show:
+              legend_value: false
+          apex_config:
+            chart:
+              height: 300
+              background: '#000000'
+              toolbar:
+                show: false
+              zoom:
+                enabled: false
+              animations:
+                enabled: false
+              parentHeightOffset: 0
+            grid:
+              show: true
+              borderColor: '#1c1c1c'
+              strokeDashArray: 0
+              xaxis:
+                lines:
+                  show: false
+              yaxis:
+                lines:
+                  show: true
+              padding:
+                left: 4
+                right: 4
+            xaxis:
+              type: datetime
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 12px
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            yaxis:
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 13px
+                formatter: EVAL:function(v){return Math.round(v);}
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            legend:
+              show: false
+            tooltip:
+              theme: dark
+            markers:
+              size: 0
+            stroke:
+              curve: smooth
+              width: 3
+            fill:
+              type: gradient
+              gradient:
+                shadeIntensity: 0.4
+                opacityFrom: 0.35
+                opacityTo: 0.02
+                stops:
+                - 0
+                - 95
+          card_mod:
+            style: 'ha-card { background: #000 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }'
+          span:
+            start: month
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: input_select.scalable_range
+          state: YTD
+        card:
+          type: custom:apexcharts-card
+          graph_span: 1y
+          update_interval: 60s
+          header:
+            show: false
+          now:
+            show: false
+          series:
+          - entity: sensor.scalable_capital_pl_anno
+            name: Variazione
+            color: '#00e676'
+            type: area
+            curve: smooth
+            stroke_width: 3
+            opacity: 1
+            extend_to: false
+            group_by:
+              func: avg
+              duration: 1d
+            show:
+              legend_value: false
+          apex_config:
+            chart:
+              height: 300
+              background: '#000000'
+              toolbar:
+                show: false
+              zoom:
+                enabled: false
+              animations:
+                enabled: false
+              parentHeightOffset: 0
+            grid:
+              show: true
+              borderColor: '#1c1c1c'
+              strokeDashArray: 0
+              xaxis:
+                lines:
+                  show: false
+              yaxis:
+                lines:
+                  show: true
+              padding:
+                left: 4
+                right: 4
+            xaxis:
+              type: datetime
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 12px
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            yaxis:
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 13px
+                formatter: EVAL:function(v){return Math.round(v);}
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            legend:
+              show: false
+            tooltip:
+              theme: dark
+            markers:
+              size: 0
+            stroke:
+              curve: smooth
+              width: 3
+            fill:
+              type: gradient
+              gradient:
+                shadeIntensity: 0.4
+                opacityFrom: 0.35
+                opacityTo: 0.02
+                stops:
+                - 0
+                - 95
+          card_mod:
+            style: 'ha-card { background: #000 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }'
+          span:
+            start: year
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: input_select.scalable_range
+          state: 1A
+        card:
+          type: custom:apexcharts-card
+          graph_span: 1y
+          update_interval: 60s
+          header:
+            show: false
+          now:
+            show: false
+          series:
+          - entity: sensor.scalable_capital_plus_minusvalenza_totale
+            name: Variazione
+            color: '#00e676'
+            type: area
+            curve: smooth
+            stroke_width: 3
+            opacity: 1
+            extend_to: false
+            group_by:
+              func: avg
+              duration: 1d
+            show:
+              legend_value: false
+          apex_config:
+            chart:
+              height: 300
+              background: '#000000'
+              toolbar:
+                show: false
+              zoom:
+                enabled: false
+              animations:
+                enabled: false
+              parentHeightOffset: 0
+            grid:
+              show: true
+              borderColor: '#1c1c1c'
+              strokeDashArray: 0
+              xaxis:
+                lines:
+                  show: false
+              yaxis:
+                lines:
+                  show: true
+              padding:
+                left: 4
+                right: 4
+            xaxis:
+              type: datetime
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 12px
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            yaxis:
+              labels:
+                style:
+                  colors: '#9a9a9a'
+                  fontSize: 13px
+                formatter: EVAL:function(v){return Math.round(v);}
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+            legend:
+              show: false
+            tooltip:
+              theme: dark
+            markers:
+              size: 0
+            stroke:
+              curve: smooth
+              width: 3
+            fill:
+              type: gradient
+              gradient:
+                shadeIntensity: 0.4
+                opacityFrom: 0.35
+                opacityTo: 0.02
+                stops:
+                - 0
+                - 95
+          card_mod:
+            style: 'ha-card { background: #000 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }'
+      - type: horizontal-stack
+        cards:
+        - type: custom:button-card
+          entity: input_select.scalable_range
+          name: 1G
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: input_select.select_option
+            service_data:
+              entity_id: input_select.scalable_range
+              option: 1G
+          state:
+          - value: 1G
+            styles:
+              card:
+              - background: '#ffffff'
+              name:
+              - color: '#000000'
+          styles:
+            card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - border-radius: 20px
+            - height: 42px
+            - padding: '0'
+            name:
+            - color: '#7a7a7a'
+            - font-size: 14px
+            - font-weight: '600'
+        - type: custom:button-card
+          entity: input_select.scalable_range
+          name: 1S
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: input_select.select_option
+            service_data:
+              entity_id: input_select.scalable_range
+              option: 1S
+          state:
+          - value: 1S
+            styles:
+              card:
+              - background: '#ffffff'
+              name:
+              - color: '#000000'
+          styles:
+            card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - border-radius: 20px
+            - height: 42px
+            - padding: '0'
+            name:
+            - color: '#7a7a7a'
+            - font-size: 14px
+            - font-weight: '600'
+        - type: custom:button-card
+          entity: input_select.scalable_range
+          name: 1M
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: input_select.select_option
+            service_data:
+              entity_id: input_select.scalable_range
+              option: 1M
+          state:
+          - value: 1M
+            styles:
+              card:
+              - background: '#ffffff'
+              name:
+              - color: '#000000'
+          styles:
+            card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - border-radius: 20px
+            - height: 42px
+            - padding: '0'
+            name:
+            - color: '#7a7a7a'
+            - font-size: 14px
+            - font-weight: '600'
+        - type: custom:button-card
+          entity: input_select.scalable_range
+          name: YTD
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: input_select.select_option
+            service_data:
+              entity_id: input_select.scalable_range
+              option: YTD
+          state:
+          - value: YTD
+            styles:
+              card:
+              - background: '#ffffff'
+              name:
+              - color: '#000000'
+          styles:
+            card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - border-radius: 20px
+            - height: 42px
+            - padding: '0'
+            name:
+            - color: '#7a7a7a'
+            - font-size: 14px
+            - font-weight: '600'
+        - type: custom:button-card
+          entity: input_select.scalable_range
+          name: 1A
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: input_select.select_option
+            service_data:
+              entity_id: input_select.scalable_range
+              option: 1A
+          state:
+          - value: 1A
+            styles:
+              card:
+              - background: '#ffffff'
+              name:
+              - color: '#000000'
+          styles:
+            card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - border-radius: 20px
+            - height: 42px
+            - padding: '0'
+            name:
+            - color: '#7a7a7a'
+            - font-size: 14px
+            - font-weight: '600'
+      - type: custom:layout-card
+        layout_type: custom:grid-layout
+        layout:
+          grid-template-columns: 1fr auto
+          align-items: center
+          padding: '0'
+        card_mod:
+          style: 'ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }'
+        cards:
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const online = states['binary_sensor.scalable_capital_sc_bridge_online'].state === 'on';\n  const ts = states['sensor.scalable_capital_ultimo_aggiornamento_portafoglio'].state;\n  const dt = new Date(ts);\n  let ora = '--:--';\n  if (!isNaN(dt.getTime())) { ora = dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }\n  const dot = online ? '#00e676' : '#ff5252';\n  return '<div style=\"display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:2px 10px 8px 22px;font-size:12px;color:#7a7a7a;\">'\n   + '<span style=\"display:inline-block;width:7px;height:7px;border-radius:50%;background:' + dot + ';\"></span>'\n   + '<span>' + (online ? 'Online' : 'Offline') + '</span>'\n   + '<span style=\"opacity:.6;\">&middot;</span>'\n   + '<span>ogg. ' + ora + '</span>'\n   + '</div>';\n]]]"
+          view_layout:
+            grid-column: '1'
+          styles:
+            card:
+            - background: '#000000'
+            - box-shadow: none
+            - border: none
+            - border-radius: '0'
+            - padding: '0'
+            - margin: '0'
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_state: false
+          show_icon: true
+          icon: mdi:refresh
+          tap_action:
+            action: call-service
+            service: homeassistant.update_entity
+            service_data:
+              entity_id: sensor.scalable_capital_portafoglio_scalable
+          view_layout:
+            grid-column: '2'
+          styles:
+            card:
+            - background: '#1c1c1c'
+            - border: none
+            - border-radius: 50%
+            - box-shadow: none
+            - width: 40px
+            - height: 40px
+            - padding: '0'
+            - margin-right: 18px
+            icon:
+            - color: '#e0e0e0'
+            - width: 20px
+      - type: grid
+        columns: 2
+        square: false
+        card_mod:
+          style: 'ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }'
+        cards:
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_titoli_scalable'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = '#ffffff';\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Titoli</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_cash_scalable'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = '#ffffff';\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Cash</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_pl_settimana'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = (v >= 0 ? '#00e676' : '#ff5252');\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Settimana</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_pl_mese'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = (v >= 0 ? '#00e676' : '#ff5252');\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Mese</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_pl_anno'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = (v >= 0 ? '#00e676' : '#ff5252');\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Anno</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
+        - type: custom:button-card
+          show_name: false
+          show_icon: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            main: "[[[\n  const v = parseFloat(states['sensor.scalable_capital_plus_minusvalenza_totale'].state) || 0;\n  const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});\n  const col = (v >= 0 ? '#00e676' : '#ff5252');\n  return '<div style=\"padding:13px 16px;\">'\n   + '<div style=\"font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.6px;\">Totale</div>'\n   + '<div style=\"font-size:23px;font-weight:600;color:' + col + ';margin-top:3px;\">' + nf2.format(v) + ' \\u20ac</div>'\n   + '</div>';\n]]]"
+          styles:
+            card:
+            - background: '#0f0f0f'
+            - border: none
+            - border-radius: 16px
+            - box-shadow: none
+            - padding: '0'
+            - margin: 4px
+            grid:
+            - grid-template-areas: '''main'''
+            - grid-template-columns: 1fr
+            custom_fields:
+              main:
+              - grid-area: main
+              - padding: '0'
