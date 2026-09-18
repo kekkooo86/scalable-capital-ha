@@ -125,6 +125,16 @@ Internal network only, port `8788`:
 - The default polling interval is conservative to avoid hitting the broker
   needlessly.
 
+## Security
+
+- This repository contains **no credentials, account ids, portfolio data or
+  personal information** — only code, configuration and templates. Sensor
+  values are read at runtime from your own Home Assistant instance.
+- A [gitleaks](https://github.com/gitleaks/gitleaks) workflow runs on every
+  push/PR to prevent secrets from being committed.
+- The add-on keeps the Scalable session inside its own `/data` volume; it is
+  reachable only on the internal Docker network (no LAN port mapping).
+
 ## License
 
 [MIT](LICENSE). Third-party assets and trademarks are covered in
