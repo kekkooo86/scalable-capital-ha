@@ -1,7 +1,7 @@
 {
   "domain": "scalable_capital",
   "name": "Scalable Capital",
-  "version": "1.8.0",
+  "version": "1.0.0",
   "config_flow": true,
   "documentation": "https://github.com/kekkooo86/scalable-capital-ha",
   "iot_class": "local_polling",
