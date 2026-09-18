@@ -28,7 +28,7 @@ _PERFORMANCE_ENTITY_IDS = {
 class ScalableBaseEntity(CoordinatorEntity, SensorEntity):
     """Base entity sharing the Scalable Capital device."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _entity_id: str | None = None
 
     def __init__(self, coordinator: ScalableCapitalCoordinator) -> None:
@@ -54,7 +54,7 @@ class ScalablePortfolioSensor(ScalableBaseEntity):
 
     _attr_unique_id = "scalable_capital_portfolio_total"
     _entity_id = "scalable_capital_portafoglio_scalable"
-    _attr_name = "Portafoglio"
+    _attr_translation_key = "portfolio"
     _attr_icon = "mdi:finance"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.TOTAL
@@ -72,7 +72,7 @@ class ScalableSecuritiesSensor(ScalableBaseEntity):
 
     _attr_unique_id = "scalable_capital_held_total"
     _entity_id = "scalable_capital_titoli_scalable"
-    _attr_name = "Titoli"
+    _attr_translation_key = "securities"
     _attr_icon = "mdi:briefcase"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.TOTAL
@@ -90,7 +90,7 @@ class ScalableCashSensor(ScalableBaseEntity):
 
     _attr_unique_id = "scalable_capital_cash"
     _entity_id = "scalable_capital_cash_scalable"
-    _attr_name = "Cash"
+    _attr_translation_key = "cash"
     _attr_icon = "mdi:cash"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.TOTAL
@@ -112,11 +112,11 @@ class ScalablePerformanceSensor(ScalableBaseEntity):
     _attr_icon = "mdi:chart-line"
     _attr_suggested_display_precision = 2
 
-    def __init__(self, coordinator: ScalableCapitalCoordinator, key: str, name: str) -> None:
+    def __init__(self, coordinator: ScalableCapitalCoordinator, key: str) -> None:
         super().__init__(coordinator)
         self._perf_key = key
         self._attr_unique_id = f"scalable_capital_return_{key}"
-        self._attr_name = name
+        self._attr_translation_key = f"performance_{key}"
         if key in _PERFORMANCE_ENTITY_IDS:
             self.entity_id = f"sensor.{_PERFORMANCE_ENTITY_IDS[key]}"
 
@@ -133,7 +133,7 @@ class ScalableLastUpdateSensor(ScalableBaseEntity):
 
     _attr_unique_id = "scalable_capital_last_update"
     _entity_id = "scalable_capital_ultimo_aggiornamento_portafoglio"
-    _attr_name = "Ultimo aggiornamento portafoglio"
+    _attr_translation_key = "last_update"
     _attr_icon = "mdi:clock-outline"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
@@ -169,14 +169,8 @@ def build_entities(
             known.add(entity.unique_id)
             entities.append(entity)
 
-    for perf_key, name in (
-        ("today", "Plus/minusvalenza oggi"),
-        ("week", "Plus/minusvalenza settimana"),
-        ("month", "Plus/minusvalenza mese"),
-        ("year", "Plus/minusvalenza anno"),
-        ("total", "Plus/minusvalenza totale"),
-    ):
-        entity = ScalablePerformanceSensor(coordinator, perf_key, name)
+    for perf_key in ("today", "week", "month", "year", "total"):
+        entity = ScalablePerformanceSensor(coordinator, perf_key)
         if entity.unique_id not in known:
             known.add(entity.unique_id)
             entities.append(entity)

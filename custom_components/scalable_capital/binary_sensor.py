@@ -14,9 +14,9 @@ from .coordinator import ScalableCapitalCoordinator
 class ScalableBridgeOnlineSensor(BinarySensorEntity):
     """Bridge and broker session reachability."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_unique_id = "scalable_capital_online"
-    _attr_name = "sc-bridge online"
+    _attr_translation_key = "bridge_online"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_icon = "mdi:check-network"
 

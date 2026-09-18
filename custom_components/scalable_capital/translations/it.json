@@ -1,4 +1,20 @@
 {
+  "entity": {
+    "sensor": {
+      "portfolio": {"name": "Portafoglio"},
+      "securities": {"name": "Titoli"},
+      "cash": {"name": "Cash"},
+      "performance_today": {"name": "Plus/minusvalenza oggi"},
+      "performance_week": {"name": "Plus/minusvalenza settimana"},
+      "performance_month": {"name": "Plus/minusvalenza mese"},
+      "performance_year": {"name": "Plus/minusvalenza anno"},
+      "performance_total": {"name": "Plus/minusvalenza totale"},
+      "last_update": {"name": "Ultimo aggiornamento"}
+    },
+    "binary_sensor": {
+      "bridge_online": {"name": "Bridge online"}
+    }
+  },
   "config": {
     "step": {
       "user": {

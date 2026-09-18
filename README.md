@@ -121,7 +121,14 @@ Internal network only, port `8788`:
 
 ## Notes
 
-- Some entity names and the add-on UI are in **Italian**.
+- Entity names are **localized** through Home Assistant: English and Italian
+  are provided (`translations/en.json`, `translations/it.json`); any other
+  language falls back to English.
+- The add-on panel is available in **English and Italian**, picked
+  automatically from the browser language.
+- The example dashboard labels are in English.
+- Entity ids keep their original spelling for backward compatibility; only the
+  displayed names are localized.
 - The default polling interval is conservative to avoid hitting the broker
   needlessly.
 

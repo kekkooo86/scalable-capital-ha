@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,92 +34,156 @@
 </head>
 <body>
   <h1>Scalable CLI Bridge</h1>
-  <div class="muted">Bridge read-only verso la CLI ufficiale Scalable (<code>sc</code>).</div>
+  <div class="muted" id="t-subtitle"></div>
 
   <div class="card">
-    <div>Stato sessione: <span id="state" class="pill warn">…</span></div>
+    <div><span id="t-session"></span>: <span id="state" class="pill warn">…</span></div>
     <div class="muted" id="detail" style="margin-top:8px"></div>
     <div class="muted" id="interval" style="margin-top:8px"></div>
     <div style="margin-top:12px">
-      <button id="logoutBtn" class="danger" style="display:none" onclick="logout()">Disconnetti account</button>
+      <button id="logoutBtn" class="danger" style="display:none"></button>
     </div>
   </div>
 
   <div class="card">
-    <div style="margin-bottom:12px">Dati portafoglio</div>
-    <table class="data" id="portfolio"><tr><td class="muted">Caricamento…</td><td></td></tr></table>
+    <div style="margin-bottom:12px" id="t-portfolio"></div>
+    <table class="data" id="portfolio"><tr><td class="muted" id="t-loading"></td><td></td></tr></table>
     <div class="muted" id="pferr" style="margin-top:8px"></div>
   </div>
 
   <div class="card" id="loginCard" style="display:none">
-    <div style="margin-bottom:12px">Accesso (device-code)</div>
-    <button id="loginBtn" onclick="startLogin()">Accedi a Scalable</button>
+    <div style="margin-bottom:12px" id="t-loginTitle"></div>
+    <button id="loginBtn"></button>
     <div id="loginBox" style="display:none; margin-top:16px">
-      <div>Apri questo URL e conferma il codice nell'app Scalable:</div>
+      <div id="t-loginHint"></div>
       <div class="url" style="margin:8px 0"><a id="loginUrl" href="#" target="_blank" rel="noopener"></a></div>
-      <div>Codice: <code id="loginCode">—</code></div>
+      <div><span id="t-code"></span>: <code id="loginCode">—</code></div>
       <div class="muted" id="loginMsg" style="margin-top:8px"></div>
     </div>
   </div>
 
   <div class="card">
-    <button id="refreshBtn" style="display:none" onclick="refreshState()">Aggiorna stato</button>
+    <button id="refreshBtn" style="display:none"></button>
     <pre id="output"></pre>
   </div>
 
 <script>
+const I18N = {
+  en: {
+    subtitle: "Read-only bridge to the official Scalable CLI (sc).",
+    session: "Session status",
+    logout: "Disconnect account",
+    logoutConfirm: "Disconnect the Scalable account from the add-on? You will need to log in again from the browser/app.",
+    portfolio: "Portfolio data",
+    loading: "Loading…",
+    loginTitle: "Sign in (device code)",
+    loginBtn: "Log in to Scalable",
+    loginHint: "Open this URL and confirm the code in the Scalable app:",
+    code: "Code",
+    waiting: "Waiting for confirmation in the Scalable app…",
+    loginDone: "Login completed.",
+    error: "Error",
+    refresh: "Refresh status",
+    interval: "Update interval (add-on option): {min} min ({s} s)",
+    pfErr: "Data unavailable: ",
+    pfErrSession: " (please log in)",
+    labels: { portfolio: "Portfolio", securities: "Securities", cash: "Cash", updated: "Last update" },
+    perf: { INTRADAY: "P/L today", ONE_WEEK: "P/L this week", ONE_MONTH: "P/L this month", ONE_YEAR: "P/L this year", MAX: "P/L total" },
+    states: { active: "active", expired: "expired", error: "error", unreachable: "unreachable" }
+  },
+  it: {
+    subtitle: "Bridge read-only verso la CLI ufficiale Scalable (sc).",
+    session: "Stato sessione",
+    logout: "Disconnetti account",
+    logoutConfirm: "Disconnettere l'account Scalable dall'add-on? Dovrai rifare l'accesso dal browser/app.",
+    portfolio: "Dati portafoglio",
+    loading: "Caricamento…",
+    loginTitle: "Accesso (device-code)",
+    loginBtn: "Accedi a Scalable",
+    loginHint: "Apri questo URL e conferma il codice nell'app Scalable:",
+    code: "Codice",
+    waiting: "In attesa della conferma nell'app Scalable…",
+    loginDone: "Accesso completato.",
+    error: "Errore",
+    refresh: "Aggiorna stato",
+    interval: "Intervallo aggiornamento (opzione add-on): {min} min ({s} s)",
+    pfErr: "Dati non disponibili: ",
+    pfErrSession: " (effettua l'accesso)",
+    labels: { portfolio: "Portafoglio", securities: "Titoli", cash: "Cash", updated: "Ultimo aggiornamento" },
+    perf: { INTRADAY: "Plus/minusvalenza oggi", ONE_WEEK: "Plus/minusvalenza settimana", ONE_MONTH: "Plus/minusvalenza mese", ONE_YEAR: "Plus/minusvalenza anno", MAX: "Plus/minusvalenza totale" },
+    states: { active: "attiva", expired: "scaduta", error: "errore", unreachable: "non raggiungibile" }
+  }
+};
+const L = ((navigator.language || "en").toLowerCase().startsWith("it")) ? I18N.it : I18N.en;
+document.documentElement.lang = (L === I18N.it) ? "it" : "en";
+
 const $ = (id) => document.getElementById(id);
+const T = (k) => L[k];
+
+function applyI18n() {
+  const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+  set("t-subtitle", T("subtitle"));
+  set("t-session", T("session"));
+  set("t-portfolio", T("portfolio"));
+  set("t-loading", T("loading"));
+  set("t-loginTitle", T("loginTitle"));
+  set("t-loginHint", T("loginHint"));
+  set("t-code", T("code"));
+  $("logoutBtn").textContent = T("logout");
+  $("loginBtn").textContent = T("loginBtn");
+  $("refreshBtn").textContent = T("refresh");
+  $("logoutBtn").onclick = logout;
+  $("loginBtn").onclick = startLogin;
+  $("refreshBtn").onclick = refreshState;
+}
 
 async function j(path, opts) {
   const r = await fetch(path, opts);
   return await r.json();
 }
 
+function fmtEur(v) {
+  if (v === null || v === undefined) return "—";
+  return new Intl.NumberFormat(undefined, {style: "currency", currency: "EUR"}).format(v);
+}
+
+let lastState = "error";
+
 async function refreshState() {
-  let st = 'error';
+  let st = "error";
   try {
-    const s = await j('session');
-    st = s.session ? s.session.state : 'error';
-    const el = $('state');
-    el.textContent = st;
-    el.className = 'pill ' + (st === 'active' ? 'ok' : (st === 'expired' ? 'warn' : 'bad'));
-    $('detail').textContent = (s.session && s.session.detail) || '';
+    const s = await j("session");
+    st = s.session ? s.session.state : "error";
+    const el = $("state");
+    el.textContent = L.states[st] || st;
+    el.className = "pill " + (st === "active" ? "ok" : (st === "expired" ? "warn" : "bad"));
+    $("detail").textContent = (s.session && s.session.detail) || "";
   } catch (e) {
-    $('state').textContent = 'unreachable';
-    $('state').className = 'pill bad';
+    st = "unreachable";
+    $("state").textContent = L.states.unreachable;
+    $("state").className = "pill bad";
   }
-  const loggedIn = st === 'active';
-  $('loginCard').style.display = loggedIn ? 'none' : 'block';
-  $('logoutBtn').style.display = loggedIn ? 'inline-block' : 'none';
-  $('refreshBtn').style.display = loggedIn ? 'inline-block' : 'none';
+  lastState = st;
+  const loggedIn = st === "active";
+  $("loginCard").style.display = loggedIn ? "none" : "block";
+  $("logoutBtn").style.display = loggedIn ? "inline-block" : "none";
+  $("refreshBtn").style.display = loggedIn ? "inline-block" : "none";
   try {
-    const c = await j('config');
+    const c = await j("config");
     if (c && c.scan_interval) {
-      $('interval').textContent = 'Intervallo aggiornamento (opzione add-on): ' +
-        Math.round(c.scan_interval / 60) + ' min (' + c.scan_interval + ' s)';
+      $("interval").textContent = T("interval")
+        .replace("{min}", Math.round(c.scan_interval / 60))
+        .replace("{s}", c.scan_interval);
     }
   } catch (e) { /* ignore */ }
   refreshPortfolio();
 }
 
-const PERF_LABELS = [
-  ['INTRADAY', 'Plus/minusvalenza oggi'],
-  ['ONE_WEEK', 'Plus/minusvalenza settimana'],
-  ['ONE_MONTH', 'Plus/minusvalenza mese'],
-  ['ONE_YEAR', 'Plus/minusvalenza anno'],
-  ['MAX', 'Plus/minusvalenza totale'],
-];
-
-function fmtEur(v) {
-  if (v === null || v === undefined) return '—';
-  return new Intl.NumberFormat('it-IT', {style: 'currency', currency: 'EUR'}).format(v);
-}
-
 async function refreshPortfolio() {
-  const table = $('portfolio');
+  const table = $("portfolio");
   try {
-    const p = await j('portfolio');
-    if (!p.ok) throw new Error(p.error || 'errore');
+    const p = await j("portfolio");
+    if (!p.ok) throw new Error(p.error || "error");
     const ov = p.overview || {};
     const val = ov.valuation || {};
     const perf = {};
@@ -129,39 +193,39 @@ async function refreshPortfolio() {
       ? Math.max(0, total - sec) : null;
 
     const rows = [
-      ['Portafoglio', fmtEur(total)],
-      ['Titoli', fmtEur(sec)],
-      ['Cash', fmtEur(cash)],
+      [L.labels.portfolio, fmtEur(total)],
+      [L.labels.securities, fmtEur(sec)],
+      [L.labels.cash, fmtEur(cash)],
     ];
-    PERF_LABELS.forEach(([k, label]) => {
-      if (perf[k] !== null && perf[k] !== undefined) rows.push([label, fmtEur(perf[k])]);
+    Object.keys(L.perf).forEach((k) => {
+      if (perf[k] !== null && perf[k] !== undefined) rows.push([L.perf[k], fmtEur(perf[k])]);
     });
     const ts = (ov.timestamps || {}).valuation_timestamp_utc;
-    rows.push(['Ultimo aggiornamento', ts ? new Date(ts).toLocaleString('it-IT') : '—']);
+    rows.push([L.labels.updated, ts ? new Date(ts).toLocaleString() : "—"]);
 
     table.innerHTML = rows.map(r =>
-      `<tr><td class="muted">${r[0]}</td><td>${r[1]}</td></tr>`).join('');
-    $('pferr').textContent = '';
+      `<tr><td class="muted">${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+    $("pferr").textContent = "";
   } catch (e) {
     table.innerHTML = '<tr><td class="muted">—</td><td></td></tr>';
-    $('pferr').textContent = 'Dati non disponibili: ' + e.message +
-      (String(e.message).indexOf('session') >= 0 ? ' (effettua l\'accesso)' : '');
+    $("pferr").textContent = T("pfErr") + e.message +
+      (String(e.message).indexOf("session") >= 0 ? T("pfErrSession") : "");
   }
 }
 
 let poll = null;
 
 async function startLogin() {
-  $('loginBtn').disabled = true;
-  const res = await j('login/start', {method: 'POST'});
+  $("loginBtn").disabled = true;
+  const res = await j("login/start", {method: "POST"});
   renderLogin(res.login);
   if (poll) clearInterval(poll);
   poll = setInterval(async () => {
-    const st = await j('login/status');
+    const st = await j("login/status");
     renderLogin(st.login);
     if (!st.login.running) {
       clearInterval(poll);
-      $('loginBtn').disabled = false;
+      $("loginBtn").disabled = false;
       refreshState();
     }
   }, 3000);
@@ -169,31 +233,32 @@ async function startLogin() {
 
 function renderLogin(l) {
   if (!l) return;
-  $('loginBox').style.display = 'block';
-  if (l.url) { $('loginUrl').textContent = l.url; $('loginUrl').href = l.url; }
-  $('loginCode').textContent = l.code || '—';
+  $("loginBox").style.display = "block";
+  if (l.url) { $("loginUrl").textContent = l.url; $("loginUrl").href = l.url; }
+  $("loginCode").textContent = l.code || "—";
   if (l.running) {
-    $('loginMsg').textContent = 'In attesa della conferma nell\'app Scalable…';
+    $("loginMsg").textContent = T("waiting");
   } else if (l.returncode === 0) {
-    $('loginMsg').textContent = 'Accesso completato.';
+    $("loginMsg").textContent = T("loginDone");
   } else if (l.error) {
-    $('loginMsg').textContent = 'Errore: ' + l.error;
+    $("loginMsg").textContent = T("error") + ": " + l.error;
   }
-  if (l.output) $('output').textContent = l.output;
+  if (l.output) $("output").textContent = l.output;
 }
 
 async function logout() {
-  if (!confirm('Disconnettere l\'account Scalable dall\'add-on? Dovrai rifare l\'accesso dal browser/app.')) return;
-  const btn = $('logoutBtn');
+  if (!confirm(T("logoutConfirm"))) return;
+  const btn = $("logoutBtn");
   btn.disabled = true;
   try {
-    await j('logout', {method: 'POST'});
+    await j("logout", {method: "POST"});
   } catch (e) { /* ignore */ }
-  $('loginMsg').textContent = '';
+  $("loginMsg").textContent = "";
   await refreshState();
   btn.disabled = false;
 }
 
+applyI18n();
 refreshState();
 </script>
 </body>
